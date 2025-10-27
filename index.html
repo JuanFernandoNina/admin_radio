@@ -116,14 +116,15 @@
         </div>
     </div>
 
-    <!-- Modal Agregar Categoría -->
+    <!-- Modal Agregar/Editar Categoría -->
     <div id="categoryModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Agregar Categoría</h2>
+                <h2 id="categoryModalTitle">Agregar Categoría</h2>
                 <button class="close-btn" onclick="closeModal('categoryModal')">&times;</button>
             </div>
             <form id="categoryForm">
+                <input type="hidden" id="categoryId">
                 <div class="form-group">
                     <label>Nombre *</label>
                     <input type="text" id="categoryName" required>
@@ -131,6 +132,25 @@
                 <div class="form-group">
                     <label>Color (hex)</label>
                     <input type="text" id="categoryColor" placeholder="#FF5722">
+                </div>
+                <div class="form-group">
+                    <label>Ícono (opcional)</label>
+                    <input type="text" id="categoryIcon" placeholder="music_note">
+                    <small style="color: #666; display: block; margin-top: 4px;">
+                        Opciones: music_note, newspaper, sports_soccer, mic, podcasts, live_tv, star
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label>Pantalla * 📱</label>
+                    <select id="categoryScreen" required>
+                        <option value="">Selecciona una pantalla</option>
+                        <option value="home">🏠 Inicio (Solo en pantalla principal)</option>
+                        <option value="grupos">👥 Grupos (Solo en pantalla de grupos)</option>
+                        <option value="both">🔄 Ambas (En inicio y grupos)</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 4px;">
+                        Define en qué sección de la app se mostrará esta categoría
+                    </small>
                 </div>
                 <div class="btn-group">
                     <button type="submit" class="btn-success">💾 Guardar</button>
@@ -267,19 +287,47 @@
                             <tr>
                                 <th>Nombre</th>
                                 <th>Color</th>
+                                <th>Ícono</th>
+                                <th>Pantalla</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(c => `
-                                <tr>
-                                    <td>${c.name}</td>
-                                    <td><span style="color: ${c.color || '#666'}">${c.color || 'N/A'}</span></td>
-                                    <td>
-                                        <button class="btn-danger btn-sm" onclick="deleteCategory('${c.id}', '${c.name}')">🗑️ Eliminar</button>
-                                    </td>
-                                </tr>
-                            `).join('')}
+                            ${data.map(c => {
+                                let screenBadge = '';
+                                if (c.screen === 'home') {
+                                    screenBadge = '<span class="badge badge-success">🏠 Inicio</span>';
+                                } else if (c.screen === 'grupos') {
+                                    screenBadge = '<span class="badge" style="background: #e3f2fd; color: #1976d2;">👥 Grupos</span>';
+                                } else if (c.screen === 'both') {
+                                    screenBadge = '<span class="badge" style="background: #f3e5f5; color: #7b1fa2;">🔄 Ambas</span>';
+                                } else {
+                                    screenBadge = '<span class="badge badge-danger">⚠️ Sin definir</span>';
+                                }
+                                
+                                // Iconos
+                                let iconDisplay = c.icon || 'N/A';
+                                
+                                return `
+                                    <tr>
+                                        <td><strong>${c.name}</strong></td>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span style="display: inline-block; width: 20px; height: 20px; background: ${c.color || '#666'}; border-radius: 4px; border: 1px solid #ddd;"></span>
+                                                <span>${c.color || 'N/A'}</span>
+                                            </div>
+                                        </td>
+                                        <td>${iconDisplay}</td>
+                                        <td>${screenBadge}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button class="btn-secondary btn-sm" onclick='editCategory(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✏️ Editar</button>
+                                                <button class="btn-danger btn-sm" onclick="deleteCategory('${c.id}', '${c.name.replace(/'/g, "&#39;")}')">🗑️</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 `;
@@ -401,7 +449,20 @@
         }
 
         function openAddCategoryModal() {
+            document.getElementById('categoryModalTitle').textContent = 'Agregar Categoría';
             document.getElementById('categoryForm').reset();
+            document.getElementById('categoryId').value = '';
+            document.getElementById('categoryScreen').value = ''; // Importante: resetear
+            document.getElementById('categoryModal').classList.add('active');
+        }
+
+        function editCategory(category) {
+            document.getElementById('categoryModalTitle').textContent = 'Editar Categoría';
+            document.getElementById('categoryId').value = category.id;
+            document.getElementById('categoryName').value = category.name;
+            document.getElementById('categoryColor').value = category.color || '';
+            document.getElementById('categoryIcon').value = category.icon || '';
+            document.getElementById('categoryScreen').value = category.screen || 'home';
             document.getElementById('categoryModal').classList.add('active');
         }
 
@@ -465,19 +526,41 @@
         document.getElementById('categoryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const id = document.getElementById('categoryId').value;
+            const screenValue = document.getElementById('categoryScreen').value;
+            
+            // Validar que se seleccionó una pantalla
+            if (!screenValue) {
+                alert('Por favor selecciona en qué pantalla se mostrará la categoría');
+                return;
+            }
+            
             const data = {
                 name: document.getElementById('categoryName').value,
-                color: document.getElementById('categoryColor').value || null
+                color: document.getElementById('categoryColor').value || null,
+                icon: document.getElementById('categoryIcon').value || null,
+                screen: screenValue
             };
 
+            console.log('Guardando categoría:', data); // Para debug
+
             try {
-                const { error } = await supabase.from('categories').insert([data]);
-                if (error) throw error;
+                let result;
+                if (id) {
+                    // Actualizar
+                    result = await supabase.from('categories').update(data).eq('id', id);
+                } else {
+                    // Crear
+                    result = await supabase.from('categories').insert([data]);
+                }
+                
+                if (result.error) throw result.error;
                 
                 closeModal('categoryModal');
                 await loadCategories();
-                alert('Categoría creada');
+                alert(id ? 'Categoría actualizada correctamente' : 'Categoría creada correctamente');
             } catch (error) {
+                console.error('Error completo:', error);
                 alert('Error: ' + error.message);
             }
         });
