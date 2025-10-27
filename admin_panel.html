@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio App - Panel Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .login-screen {
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .dashboard {
+            display: none;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .actions {
+            margin-bottom: 20px;
+        }
+
+        .content-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .content-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .content-table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .content-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .content-table {
+                font-size: 12px;
+            }
+            
+            .content-table th,
+            .content-table td {
+                padding: 10px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-screen">
+            <div class="logo">
+                <div class="logo-icon">📻</div>
+                <h1 style="text-align: center;">Panel de Administración</h1>
+                <p class="subtitle">Radio App</p>
+            </div>
+
+            <div id="loginError" style="display: none;" class="error"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="admin@radio.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" placeholder="••••••" required>
+                </div>
+                <button type="submit" id="loginBtn" style="width: 100%;">Iniciar Sesión</button>
+            </form>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="dashboard">
+            <div class="header">
+                <h1>🎵 Panel de Control</h1>
+                <button class="btn-danger" onclick="logout()">Cerrar Sesión</button>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('content')">📻 Contenido</div>
+                <div class="tab" onclick="showTab('categories')">🏷️ Categorías</div>
+                <div class="tab" onclick="showTab('carousel')">🎠 Carrusel</div>
+            </div>
+
+            <div id="contentTab" class="tab-content">
+                <div class="actions">
+                    <button class="btn-success" onclick="openAddContentModal()">➕ Agregar Contenido</button>
+                </div>
+                <div id="contentList" class="loading">Cargando...</div>
+            </div>
+
+            <div id="categoriesTab" class="tab-content" style="display: none;">
+                <div class="actions">
+                    <button class="btn-success" onclick="openAddCategoryModal()">➕ Agregar Categoría</button>
+                </div>
+                <div id="categoryList" class="loading">Cargando...</div>
+            </div>
+
+            <div id="carouselTab" class="tab-content" style="display: none;">
+                <div class="actions">
+                    <button class="btn-success" onclick="openAddCarouselModal()">➕ Agregar Banner</button>
+                </div>
+                <div id="carouselList" class="loading">Cargando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Agregar/Editar Contenido -->
+    <div id="contentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="contentModalTitle">Agregar Contenido</h2>
+                <button class="close-btn" onclick="closeModal('contentModal')">&times;</button>
+            </div>
+            <form id="contentForm">
+                <input type="hidden" id="contentId">
+                <div class="form-group">
+                    <label>Título *</label>
+                    <input type="text" id="contentTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="contentDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="contentCategory">
+                        <option value="">Sin categoría</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>URL de Miniatura</label>
+                    <input type="url" id="contentThumbnail" placeholder="https://ejemplo.com/imagen.jpg">
+                </div>
+                <div class="form-group">
+                    <label>URL de Audio</label>
+                    <input type="url" id="contentAudio" placeholder="https://ejemplo.com/audio.mp3">
+                </div>
+                <div class="form-group">
+                    <label>URL de Video</label>
+                    <input type="url" id="contentVideo" placeholder="https://ejemplo.com/video.mp4">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="contentActive" checked> Activo
+                    </label>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn-success">💾 Guardar</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('contentModal')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Agregar Categoría -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Agregar Categoría</h2>
+                <button class="close-btn" onclick="closeModal('categoryModal')">&times;</button>
+            </div>
+            <form id="categoryForm">
+                <div class="form-group">
+                    <label>Nombre *</label>
+                    <input type="text" id="categoryName" required>
+                </div>
+                <div class="form-group">
+                    <label>Color (hex)</label>
+                    <input type="text" id="categoryColor" placeholder="#FF5722">
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn-success">💾 Guardar</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('categoryModal')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Agregar/Editar Carrusel -->
+    <div id="carouselModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="carouselModalTitle">Agregar Banner</h2>
+                <button class="close-btn" onclick="closeModal('carouselModal')">&times;</button>
+            </div>
+            <form id="carouselForm">
+                <input type="hidden" id="carouselId">
+                <div class="form-group">
+                    <label>Título *</label>
+                    <input type="text" id="carouselTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="carouselDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>URL de Imagen *</label>
+                    <input type="url" id="carouselImage" required placeholder="https://ejemplo.com/banner.jpg">
+                </div>
+                <div class="form-group">
+                    <label>Orden</label>
+                    <input type="number" id="carouselOrder" value="0">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="carouselActive" checked> Activo
+                    </label>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn-success">💾 Guardar</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('carouselModal')">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://cvzscfcciaegdgnyrkgg.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2enNjZmNjaWFlZ2Rnbnlya2dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3OTQwMjMsImV4cCI6MjA3NjM3MDAyM30.dmAE84YXEtc9667I3b31fehIn_m8-9DIyBGrpppDRMY';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let categories = [];
+
+        // LOGIN
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('loginError');
+
+            loginBtn.textContent = 'Iniciando sesión...';
+            loginBtn.disabled = true;
+            errorDiv.style.display = 'none';
+
+            try {
+                const { error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                await loadCategories();
+                await loadContent();
+            } catch (error) {
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                loginBtn.textContent = 'Iniciar Sesión';
+                loginBtn.disabled = false;
+            }
+        });
+
+        // LOGOUT
+        async function logout() {
+            await supabase.auth.signOut();
+            location.reload();
+        }
+
+        // TABS
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('contentTab').style.display = 'none';
+            document.getElementById('categoriesTab').style.display = 'none';
+            document.getElementById('carouselTab').style.display = 'none';
+            
+            if (tabName === 'content') {
+                document.getElementById('contentTab').style.display = 'block';
+                loadContent();
+            } else if (tabName === 'categories') {
+                document.getElementById('categoriesTab').style.display = 'block';
+                loadCategories();
+            } else if (tabName === 'carousel') {
+                document.getElementById('carouselTab').style.display = 'block';
+                loadCarousel();
+            }
+        }
+
+        // CARGAR CATEGORÍAS
+        async function loadCategories() {
+            try {
+                const { data, error } = await supabase.from('categories').select('*').order('name');
+                if (error) throw error;
+                
+                categories = data;
+                
+                // Actualizar selector en formulario de contenido
+                const select = document.getElementById('contentCategory');
+                select.innerHTML = '<option value="">Sin categoría</option>' + 
+                    data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                
+                // Mostrar lista
+                const list = document.getElementById('categoryList');
+                if (data.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><p>No hay categorías</p></div>';
+                    return;
+                }
+                
+                list.innerHTML = `
+                    <table class="content-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Color</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(c => `
+                                <tr>
+                                    <td>${c.name}</td>
+                                    <td><span style="color: ${c.color || '#666'}">${c.color || 'N/A'}</span></td>
+                                    <td>
+                                        <button class="btn-danger btn-sm" onclick="deleteCategory('${c.id}', '${c.name}')">🗑️ Eliminar</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('categoryList').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // CARGAR CONTENIDO
+        async function loadContent() {
+            try {
+                const { data, error } = await supabase.from('radio_content').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                
+                const list = document.getElementById('contentList');
+                if (data.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📻</div><p>No hay contenido</p></div>';
+                    return;
+                }
+                
+                list.innerHTML = `
+                    <table class="content-table">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Audio</th>
+                                <th>Video</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(c => `
+                                <tr>
+                                    <td><strong>${c.title}</strong><br><small>${c.description || ''}</small></td>
+                                    <td>${c.audio_url ? '✅' : '❌'}</td>
+                                    <td>${c.video_url ? '✅' : '❌'}</td>
+                                    <td><span class="badge ${c.is_active ? 'badge-success' : 'badge-danger'}">${c.is_active ? 'Activo' : 'Inactivo'}</span></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn-secondary btn-sm" onclick='editContent(${JSON.stringify(c)})'>✏️ Editar</button>
+                                            <button class="btn-danger btn-sm" onclick="deleteContent('${c.id}', '${c.title}')">🗑️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('contentList').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // CARGAR CARRUSEL
+        async function loadCarousel() {
+            try {
+                const { data, error } = await supabase.from('carousel_items').select('*').order('order_position');
+                if (error) throw error;
+                
+                const list = document.getElementById('carouselList');
+                if (data.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎠</div><p>No hay banners</p></div>';
+                    return;
+                }
+                
+                list.innerHTML = `
+                    <table class="content-table">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Orden</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(c => `
+                                <tr>
+                                    <td><strong>${c.title}</strong><br><small>${c.description || ''}</small></td>
+                                    <td>${c.order_position}</td>
+                                    <td><span class="badge ${c.is_active ? 'badge-success' : 'badge-danger'}">${c.is_active ? 'Activo' : 'Inactivo'}</span></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn-secondary btn-sm" onclick='editCarousel(${JSON.stringify(c)})'>✏️ Editar</button>
+                                            <button class="btn-danger btn-sm" onclick="deleteCarousel('${c.id}', '${c.title}')">🗑️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                document.getElementById('carouselList').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // MODALES
+        function openAddContentModal() {
+            document.getElementById('contentModalTitle').textContent = 'Agregar Contenido';
+            document.getElementById('contentForm').reset();
+            document.getElementById('contentId').value = '';
+            document.getElementById('contentActive').checked = true;
+            document.getElementById('contentModal').classList.add('active');
+        }
+
+        function editContent(content) {
+            document.getElementById('contentModalTitle').textContent = 'Editar Contenido';
+            document.getElementById('contentId').value = content.id;
+            document.getElementById('contentTitle').value = content.title;
+            document.getElementById('contentDescription').value = content.description || '';
+            document.getElementById('contentCategory').value = content.category_id || '';
+            document.getElementById('contentThumbnail').value = content.thumbnail_url || '';
+            document.getElementById('contentAudio').value = content.audio_url || '';
+            document.getElementById('contentVideo').value = content.video_url || '';
+            document.getElementById('contentActive').checked = content.is_active;
+            document.getElementById('contentModal').classList.add('active');
+        }
+
+        function openAddCategoryModal() {
+            document.getElementById('categoryForm').reset();
+            document.getElementById('categoryModal').classList.add('active');
+        }
+
+        function openAddCarouselModal() {
+            document.getElementById('carouselModalTitle').textContent = 'Agregar Banner';
+            document.getElementById('carouselForm').reset();
+            document.getElementById('carouselId').value = '';
+            document.getElementById('carouselActive').checked = true;
+            document.getElementById('carouselModal').classList.add('active');
+        }
+
+        function editCarousel(item) {
+            document.getElementById('carouselModalTitle').textContent = 'Editar Banner';
+            document.getElementById('carouselId').value = item.id;
+            document.getElementById('carouselTitle').value = item.title;
+            document.getElementById('carouselDescription').value = item.description || '';
+            document.getElementById('carouselImage').value = item.image_url;
+            document.getElementById('carouselOrder').value = item.order_position;
+            document.getElementById('carouselActive').checked = item.is_active;
+            document.getElementById('carouselModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // GUARDAR CONTENIDO
+        document.getElementById('contentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('contentId').value;
+            const data = {
+                title: document.getElementById('contentTitle').value,
+                description: document.getElementById('contentDescription').value || null,
+                category_id: document.getElementById('contentCategory').value || null,
+                thumbnail_url: document.getElementById('contentThumbnail').value || null,
+                audio_url: document.getElementById('contentAudio').value || null,
+                video_url: document.getElementById('contentVideo').value || null,
+                is_active: document.getElementById('contentActive').checked
+            };
+
+            try {
+                let result;
+                if (id) {
+                    result = await supabase.from('radio_content').update(data).eq('id', id);
+                } else {
+                    result = await supabase.from('radio_content').insert([data]);
+                }
+                
+                if (result.error) throw result.error;
+                
+                closeModal('contentModal');
+                await loadContent();
+                alert(id ? 'Contenido actualizado' : 'Contenido creado');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // GUARDAR CATEGORÍA
+        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('categoryName').value,
+                color: document.getElementById('categoryColor').value || null
+            };
+
+            try {
+                const { error } = await supabase.from('categories').insert([data]);
+                if (error) throw error;
+                
+                closeModal('categoryModal');
+                await loadCategories();
+                alert('Categoría creada');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // GUARDAR CARRUSEL
+        document.getElementById('carouselForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('carouselId').value;
+            const data = {
+                title: document.getElementById('carouselTitle').value,
+                description: document.getElementById('carouselDescription').value || null,
+                image_url: document.getElementById('carouselImage').value,
+                order_position: parseInt(document.getElementById('carouselOrder').value),
+                is_active: document.getElementById('carouselActive').checked
+            };
+
+            try {
+                let result;
+                if (id) {
+                    result = await supabase.from('carousel_items').update(data).eq('id', id);
+                } else {
+                    result = await supabase.from('carousel_items').insert([data]);
+                }
+                
+                if (result.error) throw result.error;
+                
+                closeModal('carouselModal');
+                await loadCarousel();
+                alert(id ? 'Banner actualizado' : 'Banner creado');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // ELIMINAR
+        async function deleteContent(id, title) {
+            if (!confirm(`¿Eliminar "${title}"?`)) return;
+            try {
+                const { error } = await supabase.from('radio_content').delete().eq('id', id);
+                if (error) throw error;
+                await loadContent();
+                alert('Contenido eliminado');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function deleteCategory(id, name) {
+            if (!confirm(`¿Eliminar categoría "${name}"?`)) return;
+            try {
+                const { error } = await supabase.from('categories').delete().eq('id', id);
+                if (error) throw error;
+                await loadCategories();
+                alert('Categoría eliminada');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function deleteCarousel(id, title) {
+            if (!confirm(`¿Eliminar banner "${title}"?`)) return;
+            try {
+                const { error } = await supabase.from('carousel_items').delete().eq('id', id);
+                if (error) throw error;
+                await loadCarousel();
+                alert('Banner eliminado');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // VERIFICAR SESIÓN AL CARGAR
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadCategories().then(() => loadContent());
+            }
+        });
+
+        // CERRAR MODAL AL HACER CLICK FUERA
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
