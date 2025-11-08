@@ -23,6 +23,19 @@ try {
 }
 
 let categories = [];
+let currentData = {
+    content: [],
+    categories: [],
+    carousel: [],
+    events: []
+};
+let currentPage = {
+    content: 1,
+    categories: 1,
+    carousel: 1,
+    events: 1
+};
+const ITEMS_PER_PAGE = 10;
 
 // Esperar a que el DOM esté completamente cargado
 document.addEventListener('DOMContentLoaded', function() {
@@ -35,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const errorDiv = document.getElementById('loginError');
             const originalText = loginBtn.innerHTML;
             
-            loginBtn.innerHTML = 'Iniciando...';
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Iniciando...';
             loginBtn.disabled = true;
             if (errorDiv) errorDiv.style.display = 'none';
             
@@ -99,8 +112,19 @@ async function checkExistingSession() {
 // Sidebar toggle
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
+    const mobileToggle = document.querySelector('.mobile-menu-toggle');
+    
     if (sidebar) {
-        sidebar.classList.toggle('collapsed');
+        sidebar.classList.toggle('active');
+        
+        // Cambiar icono del botón móvil
+        if (mobileToggle) {
+            if (sidebar.classList.contains('active')) {
+                mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
+            } else {
+                mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        }
     }
 }
 
@@ -164,14 +188,19 @@ function showTab(tabName) {
     // Update page title
     const pageTitle = document.getElementById('pageTitle');
     const tabTitles = {
-        content: '📻 Contenido',
-        categories: '🏷️ Categorías',
-        carousel: '🎠 Carrusel',
-        events: '📅 Eventos'
+        content: '<i class="fas fa-music"></i> Contenido',
+        categories: '<i class="fas fa-tags"></i> Categorías',
+        carousel: '<i class="fas fa-images"></i> Carrusel',
+        events: '<i class="fas fa-calendar-alt"></i> Eventos'
     };
     if (pageTitle && tabTitles[tabName]) {
-        pageTitle.textContent = tabTitles[tabName];
+        pageTitle.innerHTML = tabTitles[tabName];
     }
+
+    // Reset search and filters
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('sortFilter').value = 'newest';
 
     // Load data
     switch(tabName) {
@@ -358,43 +387,329 @@ async function logout() {
     }
 }
 
-// EVENTOS
-async function loadEvents() {
+// Search functionality
+function handleSearch() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const currentTab = getCurrentTab();
+    
+    if (!currentTab) return;
+    
+    const filteredData = currentData[currentTab].filter(item => {
+        if (currentTab === 'content') {
+            return item.title.toLowerCase().includes(searchTerm) || 
+                   (item.description && item.description.toLowerCase().includes(searchTerm));
+        } else if (currentTab === 'categories') {
+            return item.name.toLowerCase().includes(searchTerm);
+        } else if (currentTab === 'carousel') {
+            return item.title.toLowerCase().includes(searchTerm) || 
+                   (item.description && item.description.toLowerCase().includes(searchTerm));
+        } else if (currentTab === 'events') {
+            return item.title.toLowerCase().includes(searchTerm) || 
+                   (item.description && item.description.toLowerCase().includes(searchTerm));
+        }
+        return true;
+    });
+    
+    renderTable(currentTab, filteredData);
+}
+
+// Filter functionality
+function handleFilter() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const currentTab = getCurrentTab();
+    
+    if (!currentTab) return;
+    
+    let filteredData = [...currentData[currentTab]];
+    
+    if (statusFilter === 'active') {
+        filteredData = filteredData.filter(item => item.is_active === true);
+    } else if (statusFilter === 'inactive') {
+        filteredData = filteredData.filter(item => item.is_active === false);
+    }
+    
+    renderTable(currentTab, filteredData);
+}
+
+// Sort functionality
+function handleSort() {
+    const sortFilter = document.getElementById('sortFilter').value;
+    const currentTab = getCurrentTab();
+    
+    if (!currentTab) return;
+    
+    let sortedData = [...currentData[currentTab]];
+    
+    switch(sortFilter) {
+        case 'newest':
+            if (currentTab === 'content' || currentTab === 'events') {
+                sortedData.sort((a, b) => new Date(b.created_at || b.event_date) - new Date(a.created_at || a.event_date));
+            } else {
+                sortedData.sort((a, b) => b.id - a.id);
+            }
+            break;
+        case 'oldest':
+            if (currentTab === 'content' || currentTab === 'events') {
+                sortedData.sort((a, b) => new Date(a.created_at || a.event_date) - new Date(b.created_at || b.event_date));
+            } else {
+                sortedData.sort((a, b) => a.id - b.id);
+            }
+            break;
+        case 'name':
+            if (currentTab === 'content' || currentTab === 'carousel' || currentTab === 'events') {
+                sortedData.sort((a, b) => a.title.localeCompare(b.title));
+            } else if (currentTab === 'categories') {
+                sortedData.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            break;
+    }
+    
+    renderTable(currentTab, sortedData);
+}
+
+// Get current active tab
+function getCurrentTab() {
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) return null;
+    
+    if (activeTab.id === 'contentTab') return 'content';
+    if (activeTab.id === 'categoriesTab') return 'categories';
+    if (activeTab.id === 'carouselTab') return 'carousel';
+    if (activeTab.id === 'eventsTab') return 'events';
+    
+    return null;
+}
+
+// Pagination functions
+function renderPagination(tabName, totalItems) {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    const currentPageNum = currentPage[tabName];
+    const paginationContainer = document.getElementById(tabName + 'Pagination');
+    
+    if (!paginationContainer || totalPages <= 1) {
+        if (paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = `
+        <button class="pagination-btn" onclick="changePage('${tabName}', ${currentPageNum - 1})" ${currentPageNum === 1 ? 'disabled' : ''}>
+            <i class="fas fa-chevron-left"></i> Anterior
+        </button>
+        
+        <div class="pagination-info">
+            Página ${currentPageNum} de ${totalPages}
+        </div>
+        
+        <div class="pagination-pages">
+    `;
+    
+    // Mostrar páginas (máximo 5)
+    const startPage = Math.max(1, currentPageNum - 2);
+    const endPage = Math.min(totalPages, startPage + 4);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <button class="page-btn ${i === currentPageNum ? 'active' : ''}" onclick="changePage('${tabName}', ${i})">
+                ${i}
+            </button>
+        `;
+    }
+    
+    paginationHTML += `
+        </div>
+        
+        <button class="pagination-btn" onclick="changePage('${tabName}', ${currentPageNum + 1})" ${currentPageNum === totalPages ? 'disabled' : ''}>
+            Siguiente <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    paginationContainer.innerHTML = paginationHTML;
+}
+
+function changePage(tabName, pageNum) {
+    const totalPages = Math.ceil(currentData[tabName].length / ITEMS_PER_PAGE);
+    
+    if (pageNum < 1 || pageNum > totalPages) return;
+    
+    currentPage[tabName] = pageNum;
+    renderTable(tabName, currentData[tabName]);
+}
+
+function getPaginatedData(data, pageNum) {
+    const startIndex = (pageNum - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return data.slice(startIndex, endIndex);
+}
+
+// Render table with paginated data
+function renderTable(tabName, data) {
+    const currentPageNum = currentPage[tabName];
+    const paginatedData = getPaginatedData(data, currentPageNum);
+    
+    switch(tabName) {
+        case 'content':
+            renderContentTable(paginatedData);
+            break;
+        case 'categories':
+            renderCategoriesTable(paginatedData);
+            break;
+        case 'carousel':
+            renderCarouselTable(paginatedData);
+            break;
+        case 'events':
+            renderEventsTable(paginatedData);
+            break;
+    }
+    
+    renderPagination(tabName, data.length);
+}
+
+// ===============================
+// FUNCIONES CRUD PARA CONTENIDO
+// ===============================
+
+function openAddContentModal() {
+    const modal = document.getElementById('contentModal');
+    if (modal) {
+        document.getElementById('contentModalTitle').innerHTML = '<i class="fas fa-plus"></i> Agregar Contenido';
+        document.getElementById('contentForm').reset();
+        document.getElementById('contentId').value = '';
+        document.getElementById('contentActive').checked = true;
+        modal.classList.add('active');
+    }
+}
+
+function editContent(content) {
+    const modal = document.getElementById('contentModal');
+    if (modal) {
+        document.getElementById('contentModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Contenido';
+        document.getElementById('contentId').value = content.id;
+        document.getElementById('contentTitle').value = content.title;
+        document.getElementById('contentDescription').value = content.description || '';
+        document.getElementById('contentCategory').value = content.category_id || '';
+        document.getElementById('contentThumbnail').value = content.thumbnail_url || '';
+        document.getElementById('contentAudio').value = content.audio_url || '';
+        document.getElementById('contentVideo').value = content.video_url || '';
+        document.getElementById('contentActive').checked = content.is_active;
+        modal.classList.add('active');
+    }
+}
+
+async function deleteContent(id, title) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar "${title}"?`)) return;
+    
     try {
         if (!supabase) throw new Error('Conexión no disponible');
         
-        const { data, error } = await supabase.from('events').select('*').order('event_date', { ascending: false });
+        const { error } = await supabase.from('radio_content').delete().eq('id', id);
         if (error) throw error;
-        const list = document.getElementById('eventList');
-        if (!list) return;
         
-        if (data.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><p>No hay eventos</p></div>';
-            return;
-        }
-        list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Fecha</th><th>Horario</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + data.map(e => {
-            const date = new Date(e.event_date + 'T00:00:00');
-            const dateStr = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-            let timeStr = 'Todo el día';
-            if (e.start_time && e.end_time) timeStr = e.start_time + ' - ' + e.end_time;
-            else if (e.start_time) timeStr = e.start_time;
-            const type = e.is_reminder ? '<span class="badge badge-warning">🔔 Recordatorio</span>' : '<span class="badge badge-info">📅 Evento</span>';
-            const status = '<span class="badge ' + (e.is_active ? 'badge-success">Activo' : 'badge-danger">Inactivo') + '</span>';
-            return '<tr><td><strong>' + e.title + '</strong>' + (e.description ? '<br><small>' + e.description.substring(0,50) + '...</small>' : '') + '</td><td>' + dateStr + '</td><td>' + timeStr + '</td><td>' + type + '</td><td>' + status + '</td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editEvent(' + JSON.stringify(e).replace(/'/g, "&#39;") + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteEvent(\'' + e.id + '\', \'' + e.title.replace(/'/g, "&#39;") + '\')">🗑️</button></div></td></tr>';
-        }).join('') + '</tbody></table>';
+        await loadContent();
+        alert('✅ Contenido eliminado correctamente');
     } catch (error) {
-        console.error('Error loading events:', error);
-        const list = document.getElementById('eventList');
-        if (list) {
-            list.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
-        }
+        console.error('Error deleting content:', error);
+        alert('❌ Error: ' + error.message);
     }
 }
+
+// ===============================
+// FUNCIONES CRUD PARA CATEGORÍAS
+// ===============================
+
+function openAddCategoryModal() {
+    const modal = document.getElementById('categoryModal');
+    if (modal) {
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-plus"></i> Agregar Categoría';
+        document.getElementById('categoryForm').reset();
+        document.getElementById('categoryId').value = '';
+        modal.classList.add('active');
+    }
+}
+
+function editCategory(category) {
+    const modal = document.getElementById('categoryModal');
+    if (modal) {
+        document.getElementById('categoryModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
+        document.getElementById('categoryId').value = category.id;
+        document.getElementById('categoryName').value = category.name;
+        document.getElementById('categoryColor').value = category.color || '';
+        document.getElementById('categoryIcon').value = category.icon || '';
+        document.getElementById('categoryScreen').value = category.screen || '';
+        modal.classList.add('active');
+    }
+}
+
+async function deleteCategory(id, name) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar la categoría "${name}"?`)) return;
+    
+    try {
+        if (!supabase) throw new Error('Conexión no disponible');
+        
+        const { error } = await supabase.from('categories').delete().eq('id', id);
+        if (error) throw error;
+        
+        await loadCategories();
+        alert('✅ Categoría eliminada correctamente');
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// ===============================
+// FUNCIONES CRUD PARA CARRUSEL
+// ===============================
+
+function openAddCarouselModal() {
+    const modal = document.getElementById('carouselModal');
+    if (modal) {
+        document.getElementById('carouselModalTitle').innerHTML = '<i class="fas fa-plus"></i> Agregar Banner';
+        document.getElementById('carouselForm').reset();
+        document.getElementById('carouselId').value = '';
+        document.getElementById('carouselActive').checked = true;
+        modal.classList.add('active');
+    }
+}
+
+function editCarousel(carousel) {
+    const modal = document.getElementById('carouselModal');
+    if (modal) {
+        document.getElementById('carouselModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Banner';
+        document.getElementById('carouselId').value = carousel.id;
+        document.getElementById('carouselTitle').value = carousel.title;
+        document.getElementById('carouselDescription').value = carousel.description || '';
+        document.getElementById('carouselImage').value = carousel.image_url;
+        document.getElementById('carouselOrder').value = carousel.order_position;
+        document.getElementById('carouselActive').checked = carousel.is_active;
+        modal.classList.add('active');
+    }
+}
+
+async function deleteCarousel(id, title) {
+    if (!confirm(`¿Estás seguro de que quieres eliminar el banner "${title}"?`)) return;
+    
+    try {
+        if (!supabase) throw new Error('Conexión no disponible');
+        
+        const { error } = await supabase.from('carousel_items').delete().eq('id', id);
+        if (error) throw error;
+        
+        await loadCarousel();
+        alert('✅ Banner eliminado correctamente');
+    } catch (error) {
+        console.error('Error deleting carousel:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// ===============================
+// FUNCIONES CRUD PARA EVENTOS
+// ===============================
 
 function openAddEventModal() {
     const modal = document.getElementById('eventModal');
     if (modal) {
-        document.getElementById('eventModalTitle').textContent = 'Agregar Evento';
+        document.getElementById('eventModalTitle').innerHTML = '<i class="fas fa-plus"></i> Agregar Evento';
         document.getElementById('eventForm').reset();
         document.getElementById('eventId').value = '';
         document.getElementById('eventActive').checked = true;
@@ -406,7 +721,7 @@ function openAddEventModal() {
 function editEvent(event) {
     const modal = document.getElementById('eventModal');
     if (modal) {
-        document.getElementById('eventModalTitle').textContent = 'Editar Evento';
+        document.getElementById('eventModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Evento';
         document.getElementById('eventId').value = event.id;
         document.getElementById('eventTitle').value = event.title;
         document.getElementById('eventDescription').value = event.description || '';
@@ -421,18 +736,83 @@ function editEvent(event) {
 }
 
 async function deleteEvent(id, title) {
-    if (!confirm('¿Eliminar "' + title + '"?')) return;
+    if (!confirm(`¿Estás seguro de que quieres eliminar el evento "${title}"?`)) return;
+    
     try {
         if (!supabase) throw new Error('Conexión no disponible');
         
         const { error } = await supabase.from('events').delete().eq('id', id);
         if (error) throw error;
+        
         await loadEvents();
-        alert('✅ Eliminado');
+        alert('✅ Evento eliminado correctamente');
     } catch (error) {
         console.error('Error deleting event:', error);
         alert('❌ Error: ' + error.message);
     }
+}
+
+// ===============================
+// FUNCIONES DE CARGA DE DATOS
+// ===============================
+
+// CONTENIDO
+async function loadContent() {
+    try {
+        if (!supabase) throw new Error('Conexión no disponible');
+        
+        const { data, error } = await supabase.from('radio_content').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        
+        currentData.content = data;
+        currentPage.content = 1;
+        
+        const list = document.getElementById('contentList');
+        if (!list) return;
+        
+        if (data.length === 0) {
+            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-music"></i></div><p>No hay contenido</p></div>';
+            document.getElementById('contentPagination').innerHTML = '';
+            return;
+        }
+        
+        renderTable('content', data);
+    } catch (error) {
+        console.error('Error loading content:', error);
+        const list = document.getElementById('contentList');
+        if (list) {
+            list.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+        }
+    }
+}
+
+function renderContentTable(content) {
+    const list = document.getElementById('contentList');
+    if (!list) return;
+    
+    list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Audio</th><th>Video</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + content.map(c => 
+        `<tr>
+            <td>
+                <strong>${c.title}</strong>
+                ${c.description ? '<br><small>' + c.description.substring(0,50) + '...</small>' : ''}
+            </td>
+            <td>${c.audio_url ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
+            <td>${c.video_url ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>'}</td>
+            <td>
+                <span class="badge ${c.is_active ? 'badge-success"><i class="fas fa-check"></i> Activo' : 'badge-danger"><i class="fas fa-times"></i> Inactivo'} </span>
+            </td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn-secondary btn-sm" onclick='editContent(${JSON.stringify(c)})'>
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-danger btn-sm" onclick="deleteContent('${c.id}', '${c.title.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`
+    ).join('') + '</tbody></table>';
 }
 
 // CATEGORÍAS
@@ -443,6 +823,8 @@ async function loadCategories() {
         const { data, error } = await supabase.from('categories').select('*').order('name');
         if (error) throw error;
         categories = data;
+        currentData.categories = data;
+        currentPage.categories = 1;
         
         const categorySelect = document.getElementById('contentCategory');
         if (categorySelect) {
@@ -453,16 +835,12 @@ async function loadCategories() {
         if (!list) return;
         
         if (data.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><p>No hay categorías</p></div>';
+            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-tags"></i></div><p>No hay categorías</p></div>';
+            document.getElementById('categoryPagination').innerHTML = '';
             return;
         }
-        list.innerHTML = '<table class="content-table"><thead><tr><th>Nombre</th><th>Color</th><th>Ícono</th><th>Pantalla</th><th>Acciones</th></tr></thead><tbody>' + data.map(c => {
-            let screen = '';
-            if (c.screen === 'home') screen = '<span class="badge badge-success">🏠 Inicio</span>';
-            else if (c.screen === 'grupos') screen = '<span class="badge" style="background:#e3f2fd;color:#1976d2">👥 Grupos</span>';
-            else if (c.screen === 'both') screen = '<span class="badge" style="background:#f3e5f5;color:#7b1fa2">🔄 Ambas</span>';
-            return '<tr><td><strong>' + c.name + '</strong></td><td><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:20px;height:20px;background:' + (c.color || '#666') + ';border-radius:4px"></span>' + (c.color || 'N/A') + '</div></td><td>' + (c.icon || 'N/A') + '</td><td>' + screen + '</td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editCategory(' + JSON.stringify(c).replace(/'/g, "&#39;") + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteCategory(\'' + c.id + '\',\'' + c.name.replace(/'/g, "&#39;") + '\')">🗑️</button></div></td></tr>';
-        }).join('') + '</tbody></table>';
+        
+        renderTable('categories', data);
     } catch (error) {
         console.error('Error loading categories:', error);
         const list = document.getElementById('categoryList');
@@ -472,108 +850,38 @@ async function loadCategories() {
     }
 }
 
-function openAddCategoryModal() {
-    const modal = document.getElementById('categoryModal');
-    if (modal) {
-        document.getElementById('categoryModalTitle').textContent = 'Agregar Categoría';
-        document.getElementById('categoryForm').reset();
-        document.getElementById('categoryId').value = '';
-        modal.classList.add('active');
-    }
-}
-
-function editCategory(cat) {
-    const modal = document.getElementById('categoryModal');
-    if (modal) {
-        document.getElementById('categoryModalTitle').textContent = 'Editar Categoría';
-        document.getElementById('categoryId').value = cat.id;
-        document.getElementById('categoryName').value = cat.name;
-        document.getElementById('categoryColor').value = cat.color || '';
-        document.getElementById('categoryIcon').value = cat.icon || '';
-        document.getElementById('categoryScreen').value = cat.screen || '';
-        modal.classList.add('active');
-    }
-}
-
-async function deleteCategory(id, name) {
-    if (!confirm('¿Eliminar "' + name + '"?')) return;
-    try {
-        if (!supabase) throw new Error('Conexión no disponible');
+function renderCategoriesTable(categories) {
+    const list = document.getElementById('categoryList');
+    if (!list) return;
+    
+    list.innerHTML = '<table class="content-table"><thead><tr><th>Nombre</th><th>Color</th><th>Ícono</th><th>Pantalla</th><th>Acciones</th></tr></thead><tbody>' + categories.map(c => {
+        let screen = '';
+        if (c.screen === 'home') screen = '<span class="badge badge-success"><i class="fas fa-home"></i> Inicio</span>';
+        else if (c.screen === 'grupos') screen = '<span class="badge" style="background:#e3f2fd;color:#1976d2"><i class="fas fa-users"></i> Grupos</span>';
+        else if (c.screen === 'both') screen = '<span class="badge" style="background:#f3e5f5;color:#7b1fa2"><i class="fas fa-sync"></i> Ambas</span>';
         
-        const { error } = await supabase.from('categories').delete().eq('id', id);
-        if (error) throw error;
-        await loadCategories();
-        alert('Eliminado');
-    } catch (error) {
-        console.error('Error deleting category:', error);
-        alert('Error: ' + error.message);
-    }
-}
-
-// CONTENIDO
-async function loadContent() {
-    try {
-        if (!supabase) throw new Error('Conexión no disponible');
-        
-        const { data, error } = await supabase.from('radio_content').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        const list = document.getElementById('contentList');
-        if (!list) return;
-        
-        if (data.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📻</div><p>No hay contenido</p></div>';
-            return;
-        }
-        list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Audio</th><th>Video</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + data.map(c => '<tr><td><strong>' + c.title + '</strong><br><small>' + (c.description || '') + '</small></td><td>' + (c.audio_url ? '✅' : '❌') + '</td><td>' + (c.video_url ? '✅' : '❌') + '</td><td><span class="badge ' + (c.is_active ? 'badge-success">Activo' : 'badge-danger">Inactivo') + '</span></td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editContent(' + JSON.stringify(c) + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteContent(\'' + c.id + '\',\'' + c.title + '\')">🗑️</button></div></td></tr>').join('') + '</tbody></table>';
-    } catch (error) {
-        console.error('Error loading content:', error);
-        const list = document.getElementById('contentList');
-        if (list) {
-            list.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
-        }
-    }
-}
-
-function openAddContentModal() {
-    const modal = document.getElementById('contentModal');
-    if (modal) {
-        document.getElementById('contentModalTitle').textContent = 'Agregar Contenido';
-        document.getElementById('contentForm').reset();
-        document.getElementById('contentId').value = '';
-        document.getElementById('contentActive').checked = true;
-        modal.classList.add('active');
-    }
-}
-
-function editContent(c) {
-    const modal = document.getElementById('contentModal');
-    if (modal) {
-        document.getElementById('contentModalTitle').textContent = 'Editar Contenido';
-        document.getElementById('contentId').value = c.id;
-        document.getElementById('contentTitle').value = c.title;
-        document.getElementById('contentDescription').value = c.description || '';
-        document.getElementById('contentCategory').value = c.category_id || '';
-        document.getElementById('contentThumbnail').value = c.thumbnail_url || '';
-        document.getElementById('contentAudio').value = c.audio_url || '';
-        document.getElementById('contentVideo').value = c.video_url || '';
-        document.getElementById('contentActive').checked = c.is_active;
-        modal.classList.add('active');
-    }
-}
-
-async function deleteContent(id, title) {
-    if (!confirm('¿Eliminar "' + title + '"?')) return;
-    try {
-        if (!supabase) throw new Error('Conexión no disponible');
-        
-        const { error } = await supabase.from('radio_content').delete().eq('id', id);
-        if (error) throw error;
-        await loadContent();
-        alert('Eliminado');
-    } catch (error) {
-        console.error('Error deleting content:', error);
-        alert('Error: ' + error.message);
-    }
+        return `<tr>
+            <td><strong>${c.name}</strong></td>
+            <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span style="display:inline-block;width:20px;height:20px;background:${c.color || '#666'};border-radius:4px"></span>
+                    ${c.color || 'N/A'}
+                </div>
+            </td>
+            <td>${c.icon || 'N/A'}</td>
+            <td>${screen}</td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn-secondary btn-sm" onclick='editCategory(${JSON.stringify(c)})'>
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-danger btn-sm" onclick="deleteCategory('${c.id}', '${c.name.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('') + '</tbody></table>';
 }
 
 // CARRUSEL
@@ -583,14 +891,20 @@ async function loadCarousel() {
         
         const { data, error } = await supabase.from('carousel_items').select('*').order('order_position');
         if (error) throw error;
+        
+        currentData.carousel = data;
+        currentPage.carousel = 1;
+        
         const list = document.getElementById('carouselList');
         if (!list) return;
         
         if (data.length === 0) {
-            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎠</div><p>No hay banners</p></div>';
+            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-images"></i></div><p>No hay banners</p></div>';
+            document.getElementById('carouselPagination').innerHTML = '';
             return;
         }
-        list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Orden</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + data.map(c => '<tr><td><strong>' + c.title + '</strong><br><small>' + (c.description || '') + '</small></td><td>' + c.order_position + '</td><td><span class="badge ' + (c.is_active ? 'badge-success">Activo' : 'badge-danger">Inactivo') + '</span></td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editCarousel(' + JSON.stringify(c) + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteCarousel(\'' + c.id + '\',\'' + c.title + '\')">🗑️</button></div></td></tr>').join('') + '</tbody></table>';
+        
+        renderTable('carousel', data);
     } catch (error) {
         console.error('Error loading carousel:', error);
         const list = document.getElementById('carouselList');
@@ -600,42 +914,98 @@ async function loadCarousel() {
     }
 }
 
-function openAddCarouselModal() {
-    const modal = document.getElementById('carouselModal');
-    if (modal) {
-        document.getElementById('carouselModalTitle').textContent = 'Agregar Banner';
-        document.getElementById('carouselForm').reset();
-        document.getElementById('carouselId').value = '';
-        document.getElementById('carouselActive').checked = true;
-        modal.classList.add('active');
-    }
+function renderCarouselTable(carousel) {
+    const list = document.getElementById('carouselList');
+    if (!list) return;
+    
+    list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Orden</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + carousel.map(c => 
+        `<tr>
+            <td>
+                <strong>${c.title}</strong>
+                ${c.description ? '<br><small>' + c.description.substring(0,50) + '...</small>' : ''}
+            </td>
+            <td>${c.order_position}</td>
+            <td>
+                <span class="badge ${c.is_active ? 'badge-success"><i class="fas fa-check"></i> Activo' : 'badge-danger"><i class="fas fa-times"></i> Inactivo'} </span>
+            </td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn-secondary btn-sm" onclick='editCarousel(${JSON.stringify(c)})'>
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-danger btn-sm" onclick="deleteCarousel('${c.id}', '${c.title.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`
+    ).join('') + '</tbody></table>';
 }
 
-function editCarousel(c) {
-    const modal = document.getElementById('carouselModal');
-    if (modal) {
-        document.getElementById('carouselModalTitle').textContent = 'Editar Banner';
-        document.getElementById('carouselId').value = c.id;
-        document.getElementById('carouselTitle').value = c.title;
-        document.getElementById('carouselDescription').value = c.description || '';
-        document.getElementById('carouselImage').value = c.image_url;
-        document.getElementById('carouselOrder').value = c.order_position;
-        document.getElementById('carouselActive').checked = c.is_active;
-        modal.classList.add('active');
-    }
-}
-
-async function deleteCarousel(id, title) {
-    if (!confirm('¿Eliminar "' + title + '"?')) return;
+// EVENTOS
+async function loadEvents() {
     try {
         if (!supabase) throw new Error('Conexión no disponible');
         
-        const { error } = await supabase.from('carousel_items').delete().eq('id', id);
+        const { data, error } = await supabase.from('events').select('*').order('event_date', { ascending: false });
         if (error) throw error;
-        await loadCarousel();
-        alert('Eliminado');
+        
+        currentData.events = data;
+        currentPage.events = 1;
+        
+        const list = document.getElementById('eventList');
+        if (!list) return;
+        
+        if (data.length === 0) {
+            list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-calendar-alt"></i></div><p>No hay eventos</p></div>';
+            document.getElementById('eventPagination').innerHTML = '';
+            return;
+        }
+        
+        renderTable('events', data);
     } catch (error) {
-        console.error('Error deleting carousel:', error);
-        alert('Error: ' + error.message);
+        console.error('Error loading events:', error);
+        const list = document.getElementById('eventList');
+        if (list) {
+            list.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
+        }
     }
+}
+
+function renderEventsTable(events) {
+    const list = document.getElementById('eventList');
+    if (!list) return;
+    
+    list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Fecha</th><th>Horario</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + events.map(e => {
+        const date = new Date(e.event_date + 'T00:00:00');
+        const dateStr = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+        let timeStr = 'Todo el día';
+        if (e.start_time && e.end_time) timeStr = e.start_time + ' - ' + e.end_time;
+        else if (e.start_time) timeStr = e.start_time;
+        const type = e.is_reminder ? 
+            '<span class="badge badge-warning"><i class="fas fa-bell"></i> Recordatorio</span>' : 
+            '<span class="badge badge-info"><i class="fas fa-calendar"></i> Evento</span>';
+        const status = `<span class="badge ${e.is_active ? 'badge-success"><i class="fas fa-check"></i> Activo' : 'badge-danger"><i class="fas fa-times"></i> Inactivo'} </span>`;
+        
+        return `<tr>
+            <td>
+                <strong>${e.title}</strong>
+                ${e.description ? '<br><small>' + e.description.substring(0,50) + '...</small>' : ''}
+            </td>
+            <td>${dateStr}</td>
+            <td>${timeStr}</td>
+            <td>${type}</td>
+            <td>${status}</td>
+            <td>
+                <div class="btn-group">
+                    <button class="btn-secondary btn-sm" onclick='editEvent(${JSON.stringify(e)})'>
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-danger btn-sm" onclick="deleteEvent('${e.id}', '${e.title.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('') + '</tbody></table>';
 }
