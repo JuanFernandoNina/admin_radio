@@ -8,66 +8,106 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div id="loginScreen" class="login-screen">
-            <div class="logo">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
                 <div class="logo-icon">📻</div>
-                <h1 style="text-align: center;">Panel de Administración</h1>
+                <h1>Panel de Administración</h1>
                 <p class="subtitle">Radio App</p>
             </div>
-            <div id="loginError" style="display: none;" class="error"></div>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="email" placeholder="admin@radio.com" required>
-                </div>
-                <div class="form-group">
-                    <label>Contraseña</label>
-                    <input type="password" id="password" placeholder="••••••" required>
-                </div>
-                <button type="submit" id="loginBtn" style="width: 100%;">Iniciar Sesión</button>
-            </form>
+            <div class="login-body">
+                <div id="loginError" class="error"></div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label>Usuario</label>
+                        <input type="email" id="email" placeholder="admin@radio.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Contraseña</label>
+                        <input type="password" id="password" placeholder="••••••" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <span>Iniciar Sesión</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">📻 Radio App</div>
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" onclick="showTab('content')">
+                    <span class="nav-icon">📻</span>
+                    <span class="nav-text">Contenido</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showTab('categories')">
+                    <span class="nav-icon">🏷️</span>
+                    <span class="nav-text">Categorías</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showTab('carousel')">
+                    <span class="nav-icon">🎠</span>
+                    <span class="nav-text">Carrusel</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showTab('events')">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-text">Eventos</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn btn-danger logout-btn" onclick="logout()">
+                    <span>🚪 Cerrar Sesión</span>
+                </button>
+            </div>
         </div>
 
-        <div id="dashboard" class="dashboard">
-            <div class="header">
-                <h1>🎵 Panel de Control</h1>
-                <button class="btn-danger" onclick="logout()">Cerrar Sesión</button>
-            </div>
-
-            <div class="tabs">
-                <div class="tab active" onclick="showTab('content')">📻 Contenido</div>
-                <div class="tab" onclick="showTab('categories')">🏷️ Categorías</div>
-                <div class="tab" onclick="showTab('carousel')">🎠 Carrusel</div>
-                <div class="tab" onclick="showTab('events')">📅 Eventos</div>
-            </div>
-
-            <div id="contentTab" class="tab-content">
-                <div class="actions">
-                    <button class="btn-success" onclick="openAddContentModal()">➕ Agregar Contenido</button>
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-header">
+                <h1 id="pageTitle">📻 Contenido</h1>
+                <div class="header-actions">
+                    <button id="addContentBtn" class="btn btn-success" onclick="openAddContentModal()">
+                        ➕ Agregar Contenido
+                    </button>
+                    <button id="addCategoriesBtn" class="btn btn-success" onclick="openAddCategoryModal()" style="display: none;">
+                        ➕ Agregar Categoría
+                    </button>
+                    <button id="addCarouselBtn" class="btn btn-success" onclick="openAddCarouselModal()" style="display: none;">
+                        ➕ Agregar Banner
+                    </button>
+                    <button id="addEventsBtn" class="btn btn-success" onclick="openAddEventModal()" style="display: none;">
+                        ➕ Agregar Evento
+                    </button>
                 </div>
-                <div id="contentList" class="loading">Cargando...</div>
             </div>
 
-            <div id="categoriesTab" class="tab-content" style="display: none;">
-                <div class="actions">
-                    <button class="btn-success" onclick="openAddCategoryModal()">➕ Agregar Categoría</button>
+            <div class="content-body">
+                <!-- Content Tab -->
+                <div id="contentTab" class="tab-content active">
+                    <div id="contentList" class="loading">Cargando contenido...</div>
                 </div>
-                <div id="categoryList" class="loading">Cargando...</div>
-            </div>
 
-            <div id="carouselTab" class="tab-content" style="display: none;">
-                <div class="actions">
-                    <button class="btn-success" onclick="openAddCarouselModal()">➕ Agregar Banner</button>
+                <!-- Categories Tab -->
+                <div id="categoriesTab" class="tab-content">
+                    <div id="categoryList" class="loading">Cargando categorías...</div>
                 </div>
-                <div id="carouselList" class="loading">Cargando...</div>
-            </div>
 
-            <div id="eventsTab" class="tab-content" style="display: none;">
-                <div class="actions">
-                    <button class="btn-success" onclick="openAddEventModal()">➕ Agregar Evento</button>
+                <!-- Carousel Tab -->
+                <div id="carouselTab" class="tab-content">
+                    <div id="carouselList" class="loading">Cargando banners...</div>
                 </div>
-                <div id="eventList" class="loading">Cargando...</div>
+
+                <!-- Events Tab -->
+                <div id="eventsTab" class="tab-content">
+                    <div id="eventList" class="loading">Cargando eventos...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -79,40 +119,42 @@
                 <h2 id="contentModalTitle">Agregar Contenido</h2>
                 <button class="close-btn" onclick="closeModal('contentModal')">&times;</button>
             </div>
-            <form id="contentForm">
-                <input type="hidden" id="contentId">
-                <div class="form-group">
-                    <label>Título *</label>
-                    <input type="text" id="contentTitle" required>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="contentDescription"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Categoría</label>
-                    <select id="contentCategory"><option value="">Sin categoría</option></select>
-                </div>
-                <div class="form-group">
-                    <label>URL de Miniatura</label>
-                    <input type="url" id="contentThumbnail">
-                </div>
-                <div class="form-group">
-                    <label>URL de Audio</label>
-                    <input type="url" id="contentAudio">
-                </div>
-                <div class="form-group">
-                    <label>URL de Video</label>
-                    <input type="url" id="contentVideo">
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" id="contentActive" checked> Activo</label>
-                </div>
-                <div class="btn-group">
-                    <button type="submit" class="btn-success">💾 Guardar</button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('contentModal')">Cancelar</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="contentForm">
+                    <input type="hidden" id="contentId">
+                    <div class="form-group">
+                        <label>Título *</label>
+                        <input type="text" id="contentTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="contentDescription"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Categoría</label>
+                        <select id="contentCategory"><option value="">Sin categoría</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>URL de Miniatura</label>
+                        <input type="url" id="contentThumbnail">
+                    </div>
+                    <div class="form-group">
+                        <label>URL de Audio</label>
+                        <input type="url" id="contentAudio">
+                    </div>
+                    <div class="form-group">
+                        <label>URL de Video</label>
+                        <input type="url" id="contentVideo">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="contentActive" checked> Activo</label>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-success">💾 Guardar</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('contentModal')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -122,34 +164,36 @@
                 <h2 id="categoryModalTitle">Agregar Categoría</h2>
                 <button class="close-btn" onclick="closeModal('categoryModal')">&times;</button>
             </div>
-            <form id="categoryForm">
-                <input type="hidden" id="categoryId">
-                <div class="form-group">
-                    <label>Nombre *</label>
-                    <input type="text" id="categoryName" required>
-                </div>
-                <div class="form-group">
-                    <label>Color (hex)</label>
-                    <input type="text" id="categoryColor" placeholder="#FF5722">
-                </div>
-                <div class="form-group">
-                    <label>Ícono</label>
-                    <input type="text" id="categoryIcon" placeholder="music_note">
-                </div>
-                <div class="form-group">
-                    <label>Pantalla *</label>
-                    <select id="categoryScreen" required>
-                        <option value="">Selecciona</option>
-                        <option value="home">🏠 Inicio</option>
-                        <option value="grupos">👥 Grupos</option>
-                        <option value="both">🔄 Ambas</option>
-                    </select>
-                </div>
-                <div class="btn-group">
-                    <button type="submit" class="btn-success">💾 Guardar</button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('categoryModal')">Cancelar</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="categoryForm">
+                    <input type="hidden" id="categoryId">
+                    <div class="form-group">
+                        <label>Nombre *</label>
+                        <input type="text" id="categoryName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Color (hex)</label>
+                        <input type="text" id="categoryColor" placeholder="#FF5722">
+                    </div>
+                    <div class="form-group">
+                        <label>Ícono</label>
+                        <input type="text" id="categoryIcon" placeholder="music_note">
+                    </div>
+                    <div class="form-group">
+                        <label>Pantalla *</label>
+                        <select id="categoryScreen" required>
+                            <option value="">Selecciona</option>
+                            <option value="home">🏠 Inicio</option>
+                            <option value="grupos">👥 Grupos</option>
+                            <option value="both">🔄 Ambas</option>
+                        </select>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-success">💾 Guardar</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('categoryModal')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -159,32 +203,34 @@
                 <h2 id="carouselModalTitle">Agregar Banner</h2>
                 <button class="close-btn" onclick="closeModal('carouselModal')">&times;</button>
             </div>
-            <form id="carouselForm">
-                <input type="hidden" id="carouselId">
-                <div class="form-group">
-                    <label>Título *</label>
-                    <input type="text" id="carouselTitle" required>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="carouselDescription"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>URL de Imagen *</label>
-                    <input type="url" id="carouselImage" required>
-                </div>
-                <div class="form-group">
-                    <label>Orden</label>
-                    <input type="number" id="carouselOrder" value="0">
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" id="carouselActive" checked> Activo</label>
-                </div>
-                <div class="btn-group">
-                    <button type="submit" class="btn-success">💾 Guardar</button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('carouselModal')">Cancelar</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="carouselForm">
+                    <input type="hidden" id="carouselId">
+                    <div class="form-group">
+                        <label>Título *</label>
+                        <input type="text" id="carouselTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="carouselDescription"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>URL de Imagen *</label>
+                        <input type="url" id="carouselImage" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Orden</label>
+                        <input type="number" id="carouselOrder" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="carouselActive" checked> Activo</label>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-success">💾 Guardar</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('carouselModal')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -194,422 +240,48 @@
                 <h2 id="eventModalTitle">Agregar Evento</h2>
                 <button class="close-btn" onclick="closeModal('eventModal')">&times;</button>
             </div>
-            <form id="eventForm">
-                <input type="hidden" id="eventId">
-                <div class="form-group">
-                    <label>Título *</label>
-                    <input type="text" id="eventTitle" required>
-                </div>
-                <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea id="eventDescription"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Fecha *</label>
-                    <input type="date" id="eventDate" required>
-                </div>
-                <div class="form-group">
-                    <label>Hora inicio</label>
-                    <input type="time" id="eventStartTime">
-                </div>
-                <div class="form-group">
-                    <label>Hora fin</label>
-                    <input type="time" id="eventEndTime">
-                </div>
-                <div class="form-group">
-                    <label>URL Imagen</label>
-                    <input type="url" id="eventImage">
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" id="eventReminder"> 🔔 Recordatorio</label>
-                </div>
-                <div class="form-group">
-                    <label><input type="checkbox" id="eventActive" checked> ✅ Activo</label>
-                </div>
-                <div class="btn-group">
-                    <button type="submit" class="btn-success">💾 Guardar</button>
-                    <button type="button" class="btn-secondary" onclick="closeModal('eventModal')">Cancelar</button>
-                </div>
-            </form>
+            <div class="modal-body">
+                <form id="eventForm">
+                    <input type="hidden" id="eventId">
+                    <div class="form-group">
+                        <label>Título *</label>
+                        <input type="text" id="eventTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="eventDescription"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha *</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora inicio</label>
+                        <input type="time" id="eventStartTime">
+                    </div>
+                    <div class="form-group">
+                        <label>Hora fin</label>
+                        <input type="time" id="eventEndTime">
+                    </div>
+                    <div class="form-group">
+                        <label>URL Imagen</label>
+                        <input type="url" id="eventImage">
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="eventReminder"> 🔔 Recordatorio</label>
+                    </div>
+                    <div class="form-group">
+                        <label><input type="checkbox" id="eventActive" checked> ✅ Activo</label>
+                    </div>
+                    <div class="btn-group">
+                        <button type="submit" class="btn btn-success">💾 Guardar</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('eventModal')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://cvzscfcciaegdgnyrkgg.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2enNjZmNjaWFlZ2Rnbnlya2dnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3OTQwMjMsImV4cCI6MjA3NjM3MDAyM30.dmAE84YXEtc9667I3b31fehIn_m8-9DIyBGrpppDRMY';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        let categories = [];
-
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const loginBtn = document.getElementById('loginBtn');
-            const errorDiv = document.getElementById('loginError');
-            loginBtn.textContent = 'Iniciando...';
-            loginBtn.disabled = true;
-            errorDiv.style.display = 'none';
-            try {
-                const { error } = await supabase.auth.signInWithPassword({
-                    email: document.getElementById('email').value,
-                    password: document.getElementById('password').value
-                });
-                if (error) throw error;
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                await loadCategories();
-                await loadContent();
-            } catch (error) {
-                errorDiv.textContent = 'Error: ' + error.message;
-                errorDiv.style.display = 'block';
-            } finally {
-                loginBtn.textContent = 'Iniciar Sesión';
-                loginBtn.disabled = false;
-            }
-        });
-
-        async function logout() {
-            await supabase.auth.signOut();
-            location.reload();
-        }
-
-        function showTab(tabName) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            document.getElementById('contentTab').style.display = 'none';
-            document.getElementById('categoriesTab').style.display = 'none';
-            document.getElementById('carouselTab').style.display = 'none';
-            document.getElementById('eventsTab').style.display = 'none';
-            if (tabName === 'content') {
-                document.getElementById('contentTab').style.display = 'block';
-                loadContent();
-            } else if (tabName === 'categories') {
-                document.getElementById('categoriesTab').style.display = 'block';
-                loadCategories();
-            } else if (tabName === 'carousel') {
-                document.getElementById('carouselTab').style.display = 'block';
-                loadCarousel();
-            } else if (tabName === 'events') {
-                document.getElementById('eventsTab').style.display = 'block';
-                loadEvents();
-            }
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-
-        // EVENTOS
-        async function loadEvents() {
-            try {
-                const { data, error } = await supabase.from('events').select('*').order('event_date', { ascending: false });
-                if (error) throw error;
-                const list = document.getElementById('eventList');
-                if (data.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📅</div><p>No hay eventos</p></div>';
-                    return;
-                }
-                list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Fecha</th><th>Horario</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + data.map(e => {
-                    const date = new Date(e.event_date + 'T00:00:00');
-                    const dateStr = date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-                    let timeStr = 'Todo el día';
-                    if (e.start_time && e.end_time) timeStr = e.start_time + ' - ' + e.end_time;
-                    else if (e.start_time) timeStr = e.start_time;
-                    const type = e.is_reminder ? '<span class="badge badge-warning">🔔 Recordatorio</span>' : '<span class="badge badge-info">📅 Evento</span>';
-                    const status = '<span class="badge ' + (e.is_active ? 'badge-success">Activo' : 'badge-danger">Inactivo') + '</span>';
-                    return '<tr><td><strong>' + e.title + '</strong>' + (e.description ? '<br><small>' + e.description.substring(0,50) + '...</small>' : '') + '</td><td>' + dateStr + '</td><td>' + timeStr + '</td><td>' + type + '</td><td>' + status + '</td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editEvent(' + JSON.stringify(e).replace(/'/g, "&#39;") + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteEvent(\'' + e.id + '\', \'' + e.title.replace(/'/g, "&#39;") + '\')">🗑️</button></div></td></tr>';
-                }).join('') + '</tbody></table>';
-            } catch (error) {
-                document.getElementById('eventList').innerHTML = '<div class="error">Error: ' + error.message + '</div>';
-            }
-        }
-
-        function openAddEventModal() {
-            document.getElementById('eventModalTitle').textContent = 'Agregar Evento';
-            document.getElementById('eventForm').reset();
-            document.getElementById('eventId').value = '';
-            document.getElementById('eventActive').checked = true;
-            document.getElementById('eventDate').min = new Date().toISOString().split('T')[0];
-            document.getElementById('eventModal').classList.add('active');
-        }
-
-        function editEvent(event) {
-            document.getElementById('eventModalTitle').textContent = 'Editar Evento';
-            document.getElementById('eventId').value = event.id;
-            document.getElementById('eventTitle').value = event.title;
-            document.getElementById('eventDescription').value = event.description || '';
-            document.getElementById('eventDate').value = event.event_date;
-            document.getElementById('eventStartTime').value = event.start_time || '';
-            document.getElementById('eventEndTime').value = event.end_time || '';
-            document.getElementById('eventImage').value = event.image_url || '';
-            document.getElementById('eventReminder').checked = event.is_reminder;
-            document.getElementById('eventActive').checked = event.is_active;
-            document.getElementById('eventModal').classList.add('active');
-        }
-
-        document.getElementById('eventForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('eventId').value;
-            const data = {
-                title: document.getElementById('eventTitle').value,
-                description: document.getElementById('eventDescription').value || null,
-                event_date: document.getElementById('eventDate').value,
-                start_time: document.getElementById('eventStartTime').value || null,
-                end_time: document.getElementById('eventEndTime').value || null,
-                image_url: document.getElementById('eventImage').value || null,
-                is_reminder: document.getElementById('eventReminder').checked,
-                is_active: document.getElementById('eventActive').checked
-            };
-            try {
-                const result = id ? await supabase.from('events').update(data).eq('id', id) : await supabase.from('events').insert([data]);
-                if (result.error) throw result.error;
-                closeModal('eventModal');
-                await loadEvents();
-                alert(id ? '✅ Actualizado' : '✅ Creado');
-            } catch (error) {
-                alert('❌ Error: ' + error.message);
-            }
-        });
-
-        async function deleteEvent(id, title) {
-            if (!confirm('¿Eliminar "' + title + '"?')) return;
-            try {
-                const { error } = await supabase.from('events').delete().eq('id', id);
-                if (error) throw error;
-                await loadEvents();
-                alert('✅ Eliminado');
-            } catch (error) {
-                alert('❌ Error: ' + error.message);
-            }
-        }
-
-        // CATEGORÍAS
-        async function loadCategories() {
-            try {
-                const { data, error } = await supabase.from('categories').select('*').order('name');
-                if (error) throw error;
-                categories = data;
-                document.getElementById('contentCategory').innerHTML = '<option value="">Sin categoría</option>' + data.map(c => '<option value="' + c.id + '">' + c.name + '</option>').join('');
-                const list = document.getElementById('categoryList');
-                if (data.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><p>No hay categorías</p></div>';
-                    return;
-                }
-                list.innerHTML = '<table class="content-table"><thead><tr><th>Nombre</th><th>Color</th><th>Ícono</th><th>Pantalla</th><th>Acciones</th></tr></thead><tbody>' + data.map(c => {
-                    let screen = '';
-                    if (c.screen === 'home') screen = '<span class="badge badge-success">🏠 Inicio</span>';
-                    else if (c.screen === 'grupos') screen = '<span class="badge" style="background:#e3f2fd;color:#1976d2">👥 Grupos</span>';
-                    else if (c.screen === 'both') screen = '<span class="badge" style="background:#f3e5f5;color:#7b1fa2">🔄 Ambas</span>';
-                    return '<tr><td><strong>' + c.name + '</strong></td><td><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:20px;height:20px;background:' + (c.color || '#666') + ';border-radius:4px"></span>' + (c.color || 'N/A') + '</div></td><td>' + (c.icon || 'N/A') + '</td><td>' + screen + '</td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editCategory(' + JSON.stringify(c).replace(/'/g, "&#39;") + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteCategory(\'' + c.id + '\',\'' + c.name.replace(/'/g, "&#39;") + '\')">🗑️</button></div></td></tr>';
-                }).join('') + '</tbody></table>';
-            } catch (error) {
-                document.getElementById('categoryList').innerHTML = '<div class="error">Error: ' + error.message + '</div>';
-            }
-        }
-
-        function openAddCategoryModal() {
-            document.getElementById('categoryModalTitle').textContent = 'Agregar Categoría';
-            document.getElementById('categoryForm').reset();
-            document.getElementById('categoryId').value = '';
-            document.getElementById('categoryModal').classList.add('active');
-        }
-
-        function editCategory(cat) {
-            document.getElementById('categoryModalTitle').textContent = 'Editar Categoría';
-            document.getElementById('categoryId').value = cat.id;
-            document.getElementById('categoryName').value = cat.name;
-            document.getElementById('categoryColor').value = cat.color || '';
-            document.getElementById('categoryIcon').value = cat.icon || '';
-            document.getElementById('categoryScreen').value = cat.screen || '';
-            document.getElementById('categoryModal').classList.add('active');
-        }
-
-        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('categoryId').value;
-            const data = {
-                name: document.getElementById('categoryName').value,
-                color: document.getElementById('categoryColor').value || null,
-                icon: document.getElementById('categoryIcon').value || null,
-                screen: document.getElementById('categoryScreen').value
-            };
-            if (!data.screen) { alert('Selecciona pantalla'); return; }
-            try {
-                const result = id ? await supabase.from('categories').update(data).eq('id', id) : await supabase.from('categories').insert([data]);
-                if (result.error) throw result.error;
-                closeModal('categoryModal');
-                await loadCategories();
-                alert(id ? 'Actualizado' : 'Creado');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        });
-
-        async function deleteCategory(id, name) {
-            if (!confirm('¿Eliminar "' + name + '"?')) return;
-            try {
-                const { error } = await supabase.from('categories').delete().eq('id', id);
-                if (error) throw error;
-                await loadCategories();
-                alert('Eliminado');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-
-        // CONTENIDO
-        async function loadContent() {
-            try {
-                const { data, error } = await supabase.from('radio_content').select('*').order('created_at', { ascending: false });
-                if (error) throw error;
-                const list = document.getElementById('contentList');
-                if (data.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📻</div><p>No hay contenido</p></div>';
-                    return;
-                }
-                list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Audio</th><th>Video</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + data.map(c => '<tr><td><strong>' + c.title + '</strong><br><small>' + (c.description || '') + '</small></td><td>' + (c.audio_url ? '✅' : '❌') + '</td><td>' + (c.video_url ? '✅' : '❌') + '</td><td><span class="badge ' + (c.is_active ? 'badge-success">Activo' : 'badge-danger">Inactivo') + '</span></td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editContent(' + JSON.stringify(c) + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteContent(\'' + c.id + '\',\'' + c.title + '\')">🗑️</button></div></td></tr>').join('') + '</tbody></table>';
-            } catch (error) {
-                document.getElementById('contentList').innerHTML = '<div class="error">Error: ' + error.message + '</div>';
-            }
-        }
-
-        function openAddContentModal() {
-            document.getElementById('contentModalTitle').textContent = 'Agregar Contenido';
-            document.getElementById('contentForm').reset();
-            document.getElementById('contentId').value = '';
-            document.getElementById('contentActive').checked = true;
-            document.getElementById('contentModal').classList.add('active');
-        }
-
-        function editContent(c) {
-            document.getElementById('contentModalTitle').textContent = 'Editar Contenido';
-            document.getElementById('contentId').value = c.id;
-            document.getElementById('contentTitle').value = c.title;
-            document.getElementById('contentDescription').value = c.description || '';
-            document.getElementById('contentCategory').value = c.category_id || '';
-            document.getElementById('contentThumbnail').value = c.thumbnail_url || '';
-            document.getElementById('contentAudio').value = c.audio_url || '';
-            document.getElementById('contentVideo').value = c.video_url || '';
-            document.getElementById('contentActive').checked = c.is_active;
-            document.getElementById('contentModal').classList.add('active');
-        }
-
-        document.getElementById('contentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('contentId').value;
-            const data = {
-                title: document.getElementById('contentTitle').value,
-                description: document.getElementById('contentDescription').value || null,
-                category_id: document.getElementById('contentCategory').value || null,
-                thumbnail_url: document.getElementById('contentThumbnail').value || null,
-                audio_url: document.getElementById('contentAudio').value || null,
-                video_url: document.getElementById('contentVideo').value || null,
-                is_active: document.getElementById('contentActive').checked
-            };
-            try {
-                const result = id ? await supabase.from('radio_content').update(data).eq('id', id) : await supabase.from('radio_content').insert([data]);
-                if (result.error) throw result.error;
-                closeModal('contentModal');
-                await loadContent();
-                alert(id ? 'Actualizado' : 'Creado');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        });
-
-        async function deleteContent(id, title) {
-            if (!confirm('¿Eliminar "' + title + '"?')) return;
-            try {
-                const { error } = await supabase.from('radio_content').delete().eq('id', id);
-                if (error) throw error;
-                await loadContent();
-                alert('Eliminado');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-
-        // CARRUSEL
-        async function loadCarousel() {
-            try {
-                const { data, error } = await supabase.from('carousel_items').select('*').order('order_position');
-                if (error) throw error;
-                const list = document.getElementById('carouselList');
-                if (data.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎠</div><p>No hay banners</p></div>';
-                    return;
-                }
-                list.innerHTML = '<table class="content-table"><thead><tr><th>Título</th><th>Orden</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>' + data.map(c => '<tr><td><strong>' + c.title + '</strong><br><small>' + (c.description || '') + '</small></td><td>' + c.order_position + '</td><td><span class="badge ' + (c.is_active ? 'badge-success">Activo' : 'badge-danger">Inactivo') + '</span></td><td><div class="btn-group"><button class="btn-secondary btn-sm" onclick=\'editCarousel(' + JSON.stringify(c) + ')\'>✏️</button><button class="btn-danger btn-sm" onclick="deleteCarousel(\'' + c.id + '\',\'' + c.title + '\')">🗑️</button></div></td></tr>').join('') + '</tbody></table>';
-            } catch (error) {
-                document.getElementById('carouselList').innerHTML = '<div class="error">Error: ' + error.message + '</div>';
-            }
-        }
-
-        function openAddCarouselModal() {
-            document.getElementById('carouselModalTitle').textContent = 'Agregar Banner';
-            document.getElementById('carouselForm').reset();
-            document.getElementById('carouselId').value = '';
-            document.getElementById('carouselActive').checked = true;
-            document.getElementById('carouselModal').classList.add('active');
-        }
-
-        function editCarousel(c) {
-            document.getElementById('carouselModalTitle').textContent = 'Editar Banner';
-            document.getElementById('carouselId').value = c.id;
-            document.getElementById('carouselTitle').value = c.title;
-            document.getElementById('carouselDescription').value = c.description || '';
-            document.getElementById('carouselImage').value = c.image_url;
-            document.getElementById('carouselOrder').value = c.order_position;
-            document.getElementById('carouselActive').checked = c.is_active;
-            document.getElementById('carouselModal').classList.add('active');
-        }
-
-        document.getElementById('carouselForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('carouselId').value;
-            const data = {
-                title: document.getElementById('carouselTitle').value,
-                description: document.getElementById('carouselDescription').value || null,
-                image_url: document.getElementById('carouselImage').value,
-                order_position: parseInt(document.getElementById('carouselOrder').value),
-                is_active: document.getElementById('carouselActive').checked
-            };
-            try {
-                const result = id ? await supabase.from('carousel_items').update(data).eq('id', id) : await supabase.from('carousel_items').insert([data]);
-                if (result.error) throw result.error;
-                closeModal('carouselModal');
-                await loadCarousel();
-                alert(id ? 'Actualizado' : 'Creado');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        });
-
-        async function deleteCarousel(id, title) {
-            if (!confirm('¿Eliminar "' + title + '"?')) return;
-            try {
-                const { error } = await supabase.from('carousel_items').delete().eq('id', id);
-                if (error) throw error;
-                await loadCarousel();
-                alert('Eliminado');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-
-        // Verificar sesión
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                loadCategories().then(() => loadContent());
-            }
-        });
-
-        // Cerrar modales al hacer clic fuera
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.classList.remove('active');
-            });
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
